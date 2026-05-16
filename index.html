@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Ata de Reunião</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #232323;
+    --border: #2e2e2e;
+    --text: #f0f0f0;
+    --muted: #888;
+    --faint: #444;
+    --accent: #e85d4a;
+    --accent2: #4a9eff;
+    --green: #3ecf8e;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topbar-icon {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .topbar-title { font-size: 17px; font-weight: 600; }
+  .topbar-sub { font-size: 12px; color: var(--muted); }
+
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+  }
+  .tab {
+    flex: 1; padding: 12px 0;
+    font-size: 14px; font-weight: 500;
+    color: var(--muted);
+    background: none; border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: color 0.2s;
+  }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .page { display: none; padding: 20px; }
+  .page.active { display: block; }
+
+  .section { margin-bottom: 20px; }
+  .section-label {
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .card-body { padding: 16px; }
+
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+  .field input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 15px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+  }
+  .field input::placeholder { color: var(--faint); }
+  .field input:focus { outline: none; border-color: var(--accent2); }
+
+  .record-center {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 16px;
+    padding: 24px 0;
+  }
+  .record-btn {
+    width: 80px; height: 80px;
+    border-radius: 50%; border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    background: var(--accent);
+    color: white;
+    transition: transform 0.15s, opacity 0.15s;
+    box-shadow: 0 0 0 0 rgba(232,93,74,0.4);
+  }
+  .record-btn:active { transform: scale(0.95); }
+  .record-btn.recording {
+    animation: pulse-ring 1.4s ease infinite;
+  }
+  .record-btn.idle {
+    background: var(--surface2);
+    color: var(--muted);
+    box-shadow: none;
+  }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(232,93,74,0.5); }
+    70% { box-shadow: 0 0 0 20px rgba(232,93,74,0); }
+    100% { box-shadow: 0 0 0 0 rgba(232,93,74,0); }
+  }
+  .timer {
+    font-family: 'DM Mono', monospace;
+    font-size: 32px; font-weight: 500;
+    color: var(--text);
+    letter-spacing: 2px;
+  }
+  .status-pill {
+    font-size: 13px; padding: 6px 14px;
+    border-radius: 20px;
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    text-align: center;
+    max-width: 90%;
+  }
+  .status-pill.ok { background: rgba(62,207,142,0.12); color: var(--green); border-color: rgba(62,207,142,0.3); }
+  .status-pill.error { background: rgba(232,93,74,0.12); color: var(--accent); border-color: rgba(232,93,74,0.3); }
+
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    resize: vertical;
+    min-height: 100px;
+  }
+  textarea::placeholder { color: var(--faint); }
+  textarea:focus { outline: none; border-color: var(--accent2); }
+
+  .ata-content {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    font-size: 14px; line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    min-height: 80px;
+    max-height: 360px;
+    overflow-y: auto;
+  }
+  .ata-placeholder { color: var(--faint); font-style: italic; }
+
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-accent {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .btn-accent:active { opacity: 0.85; }
+
+  .loading-row {
+    display: none; align-items: center; gap: 10px;
+    padding: 12px 0; font-size: 13px; color: var(--muted);
+  }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hint { font-size: 12px; color: var(--faint); margin-top: 8px; line-height: 1.5; }
+
+  .saved-empty { text-align: center; padding: 32px 0; color: var(--muted); font-size: 14px; }
+  .saved-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .saved-item:active { border-color: var(--accent2); }
+  .saved-name { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .saved-meta { font-size: 12px; color: var(--muted); }
+  .saved-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .badge {
+    font-size: 11px; padding: 3px 8px;
+    border-radius: 20px;
+    background: rgba(74,158,255,0.12);
+    color: var(--accent2);
+    border: 1px solid rgba(74,158,255,0.25);
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-icon">🎙️</div>
+  <div>
+    <div class="topbar-title">Ata de Reunião</div>
+    <div class="topbar-sub">Grave · Transcreva · Gere com IA</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('nova')">Nova Reunião</button>
+  <button class="tab" onclick="showTab('salvas')">Atas Salvas</button>
+</div>
+
+<!-- NOVA REUNIÃO -->
+<div class="page active" id="tab-nova">
+
+  <div class="section">
+    <div class="section-label">Informações</div>
+    <div class="card"><div class="card-body">
+      <div class="field">
+        <label>Nome da reunião</label>
+        <input type="text" id="meeting-name" placeholder="Ex: Alinhamento Bandeira Alelo" />
+      </div>
+      <div class="field">
+        <label>Participantes</label>
+        <input type="text" id="participants" placeholder="Ex: Vitor, Ana, Carlos" />
+      </div>
+    </div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Gravação</div>
+    <div class="card"><div class="card-body">
+      <div class="record-center">
+        <button class="record-btn idle" id="record-btn" onclick="toggleRecording()">🎙️</button>
+        <div class="timer" id="timer">00:00</div>
+        <div class="status-pill" id="status-msg">Toque para iniciar</div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Transcrição</div>
+    <div class="card"><div class="card-body">
+      <textarea id="transcript-box" rows="5" placeholder="A transcrição aparece aqui durante a gravação. Você também pode digitar ou colar o texto manualmente."></textarea>
+      <p class="hint">💡 Edite o texto antes de gerar a ata se necessário.</p>
+    </div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Ata gerada por IA</div>
+    <div class="card"><div class="card-body">
+      <div class="loading-row" id="loading-row">
+        <div class="spinner"></div>
+        <span>Gerando ata com Claude AI...</span>
+      </div>
+      <div class="ata-content" id="ata-box">
+        <span class="ata-placeholder">A ata aparecerá aqui após clicar em "Gerar ata".</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-accent" onclick="gerarAta()">✨ Gerar ata</button>
+        <button class="btn" id="btn-salvar" onclick="salvarAta()" disabled>💾 Salvar</button>
+        <button class="btn" id="btn-copiar" onclick="copiarAta()" disabled>📋 Copiar</button>
+        <button class="btn" id="btn-email" onclick="enviarEmail()" disabled>✉️ E-mail</button>
+      </div>
+    </div></div>
+  </div>
+
+</div>
+
+<!-- ATAS SALVAS -->
+<div class="page" id="tab-salvas">
+  <div id="saved-container"></div>
+</div>
+
+<script>
+let isRecording = false;
+let recognition = null;
+let timerInterval = null;
+let seconds = 0;
+let currentAta = '';
+let savedAtas = [];
+
+try { savedAtas = JSON.parse(localStorage.getItem('atas_reuniao_v2') || '[]'); } catch(e) {}
+
+function showTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'salvas') renderSaved();
+}
+
+function setStatus(msg, type) {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = 'status-pill' + (type ? ' ' + type : '');
+}
+
+function toggleRecording() {
+  if (!isRecording) startRecording(); else stopRecording();
+}
+
+function startRecording() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    setStatus('Reconhecimento de voz não suportado. Use Chrome ou Safari, ou digite manualmente.', 'error');
+    return;
+  }
+  try {
+    recognition = new SR();
+    recognition.lang = 'pt-BR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    const box = document.getElementById('transcript-box');
+    let finalText = box.value ? box.value.trim() + ' ' : '';
+
+    recognition.onstart = () => setStatus('🔴 Gravando — fale agora...', 'ok');
+
+    recognition.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+        else interim = e.results[i][0].transcript;
+      }
+      box.value = finalText + interim;
+      box.scrollTop = box.scrollHeight;
+    };
+
+    recognition.onerror = (e) => {
+      const errs = {
+        'not-allowed': '🔒 Permissão de microfone negada. Vá em Ajustes > Safari > Microfone e permita.',
+        'no-speech': 'Nenhuma fala detectada — continue falando.',
+        'network': '🌐 Erro de rede. Verifique sua conexão.',
+        'audio-capture': '🎙️ Microfone não encontrado.'
+      };
+      const msg = errs[e.error] || 'Erro: ' + e.error;
+      if (e.error !== 'no-speech') setStatus(msg, 'error');
+    };
+
+    recognition.onend = () => { if (isRecording) { try { recognition.start(); } catch(e){} } };
+
+    recognition.start();
+    isRecording = true;
+    document.getElementById('record-btn').className = 'record-btn recording';
+    document.getElementById('record-btn').textContent = '⏹️';
+
+    seconds = 0;
+    timerInterval = setInterval(() => {
+      seconds++;
+      document.getElementById('timer').textContent =
+        String(Math.floor(seconds/60)).padStart(2,'0') + ':' + String(seconds%60).padStart(2,'0');
+    }, 1000);
+  } catch(err) {
+    setStatus('Erro ao iniciar: ' + err.message, 'error');
+  }
+}
+
+function stopRecording() {
+  isRecording = false;
+  if (recognition) { try { recognition.stop(); } catch(e){} }
+  clearInterval(timerInterval);
+  document.getElementById('record-btn').className = 'record-btn idle';
+  document.getElementById('record-btn').textContent = '🎙️';
+  const t = document.getElementById('transcript-box').value.trim();
+  setStatus(t ? '✅ Gravação encerrada. Pronto para gerar ata.' : 'Gravação encerrada.', t ? 'ok' : '');
+}
+
+async function gerarAta() {
+  const transcript = document.getElementById('transcript-box').value.trim();
+  if (!transcript) { setStatus('⚠️ Adicione uma transcrição antes de gerar a ata.', 'error'); return; }
+
+  const name = document.getElementById('meeting-name').value || 'Reunião';
+  const participants = document.getElementById('participants').value || 'Não informado';
+  const date = new Date().toLocaleDateString('pt-BR');
+
+  document.getElementById('loading-row').style.display = 'flex';
+  document.getElementById('ata-box').style.display = 'none';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: 'Você é um assistente especializado em gerar atas de reunião claras e objetivas em português brasileiro.',
+        messages: [{
+          role: 'user',
+          content: `Gere uma ata de reunião estruturada:\n\nReunião: ${name}\nData: ${date}\nParticipantes: ${participants}\n\nTranscrição:\n${transcript}\n\nEstrutura: cabeçalho com dados, resumo executivo (2-3 linhas), tópicos discutidos, decisões tomadas, próximos passos. Use tracinhos (-) como marcadores. Seja conciso e profissional.`
+        }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    currentAta = data.content?.[0]?.text || 'Não foi possível gerar.';
+    document.getElementById('ata-box').textContent = currentAta;
+    document.getElementById('btn-salvar').disabled = false;
+    document.getElementById('btn-copiar').disabled = false;
+    document.getElementById('btn-email').disabled = false;
+    setStatus('✅ Ata gerada com sucesso!', 'ok');
+  } catch(err) {
+    document.getElementById('ata-box').innerHTML = '<span class="ata-placeholder">Erro: ' + err.message + '</span>';
+    setStatus('Erro ao conectar com Claude AI.', 'error');
+  }
+
+  document.getElementById('loading-row').style.display = 'none';
+  document.getElementById('ata-box').style.display = 'block';
+}
+
+function salvarAta() {
+  savedAtas.unshift({
+    name: document.getElementById('meeting-name').value || 'Reunião sem nome',
+    participants: document.getElementById('participants').value || '',
+    date: new Date().toLocaleDateString('pt-BR'),
+    transcript: document.getElementById('transcript-box').value,
+    ata: currentAta
+  });
+  try { localStorage.setItem('atas_reuniao_v2', JSON.stringify(savedAtas)); } catch(e) {}
+  const btn = document.getElementById('btn-salvar');
+  btn.textContent = '✅ Salvo!';
+  setTimeout(() => { btn.textContent = '💾 Salvar'; }, 2000);
+}
+
+function copiarAta() {
+  navigator.clipboard.writeText(currentAta)
+    .then(() => {
+      const btn = document.getElementById('btn-copiar');
+      btn.textContent = '✅ Copiado!';
+      setTimeout(() => { btn.textContent = '📋 Copiar'; }, 2000);
+    })
+    .catch(() => setStatus('Não foi possível copiar. Selecione o texto manualmente.', 'error'));
+}
+
+function enviarEmail() {
+  const name = document.getElementById('meeting-name').value || 'Reunião';
+  window.location.href = 'mailto:?subject=' + encodeURIComponent('Ata — ' + name) + '&body=' + encodeURIComponent(currentAta);
+}
+
+function renderSaved() {
+  const c = document.getElementById('saved-container');
+  if (!savedAtas.length) {
+    c.innerHTML = '<div class="saved-empty">Nenhuma ata salva ainda.</div>';
+    return;
+  }
+  c.innerHTML = savedAtas.map((a, i) => `
+    <div class="saved-item" onclick="abrirAta(${i})">
+      <div class="saved-name">${a.name}</div>
+      <div class="saved-meta">${a.date} · ${a.participants || 'Sem participantes'}</div>
+      <div class="saved-actions">
+        <span class="badge">Ver ata</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function abrirAta(i) {
+  const a = savedAtas[i];
+  document.getElementById('meeting-name').value = a.name || '';
+  document.getElementById('participants').value = a.participants || '';
+  document.getElementById('transcript-box').value = a.transcript || '';
+  document.getElementById('ata-box').textContent = a.ata || '';
+  currentAta = a.ata || '';
+  document.getElementById('btn-copiar').disabled = false;
+  document.getElementById('btn-email').disabled = false;
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===0));
+  document.querySelectorAll('.page').forEach((p,i) => p.classList.toggle('active', i===0));
+}
+</script>
+</body>
+</html>
