@@ -593,43 +593,67 @@ async function compartilharDoc() {
 
   const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = window.docx;
 
-  const lines = currentAta.split('\n').filter(l => l.trim());
+  // Converte linha com inline markdown (**negrito**) em array de TextRun
+  function parseInline(text) {
+    const parts = [];
+    const regex = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+    let last = 0, m;
+    while ((m = regex.exec(text)) !== null) {
+      if (m.index > last) parts.push(new TextRun({ text: text.slice(last, m.index) }));
+      if (m[1]) parts.push(new TextRun({ text: m[1], bold: true }));
+      if (m[2]) parts.push(new TextRun({ text: m[2], italics: true }));
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) parts.push(new TextRun({ text: text.slice(last) }));
+    return parts.length ? parts : [new TextRun({ text })];
+  }
+
   const children = [];
 
+  // Cabeçalho
   children.push(new Paragraph({
     text: name,
     heading: HeadingLevel.HEADING_1,
     alignment: AlignmentType.CENTER,
     spacing: { after: 200 }
   }));
-
   children.push(new Paragraph({
     children: [new TextRun({ text: `Data: ${date} | Participantes: ${participants}`, color: '666666', size: 22 })],
     alignment: AlignmentType.CENTER,
     spacing: { after: 400 }
   }));
 
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const isHeading = trimmed.endsWith(':') && trimmed.length < 60;
-    const isList = trimmed.startsWith('-') || trimmed.startsWith('•');
+  for (const line of currentAta.split('\n')) {
+    const t = line.trim();
+    if (!t) { children.push(new Paragraph({ text: '' })); continue; }
 
-    if (isHeading) {
+    if (/^#{1}\s/.test(t)) {
       children.push(new Paragraph({
-        text: trimmed,
-        heading: HeadingLevel.HEADING_2,
+        children: parseInline(t.replace(/^#+\s*/, '')),
+        heading: HeadingLevel.HEADING_1,
         spacing: { before: 300, after: 100 }
       }));
-    } else if (isList) {
+    } else if (/^#{2,3}\s/.test(t)) {
       children.push(new Paragraph({
-        children: [new TextRun({ text: trimmed })],
+        children: parseInline(t.replace(/^#+\s*/, '')),
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 240, after: 80 }
+      }));
+    } else if (/^[-*•]\s/.test(t)) {
+      children.push(new Paragraph({
+        children: parseInline(t.replace(/^[-*•]\s*/, '')),
+        bullet: { level: 0 },
+        spacing: { after: 80 }
+      }));
+    } else if (/^\d+\.\s/.test(t)) {
+      children.push(new Paragraph({
+        children: parseInline(t.replace(/^\d+\.\s*/, '')),
         bullet: { level: 0 },
         spacing: { after: 80 }
       }));
     } else {
       children.push(new Paragraph({
-        children: [new TextRun({ text: trimmed })],
+        children: parseInline(t),
         spacing: { after: 120 }
       }));
     }
@@ -640,17 +664,15 @@ async function compartilharDoc() {
   const fileName = `Ata - ${name} - ${date}.docx`;
   const file = new File([blob], fileName, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
 
-  // Tenta Web Share API (iOS/Android)
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title: fileName });
       return;
     } catch(err) {
-      if (err.name === 'AbortError') return; // usuário cancelou
+      if (err.name === 'AbortError') return;
     }
   }
 
-  // Fallback: baixa o arquivo
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
