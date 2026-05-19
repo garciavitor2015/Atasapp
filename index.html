@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Ata de Reunião</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+<script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
 <style>
   :root {
     --bg: #0f0f0f;
@@ -433,7 +433,7 @@ async function gerarAta() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
         system: 'Você é um assistente especializado em gerar atas de reunião claras e objetivas em português brasileiro.',
         messages: [{
@@ -496,7 +496,7 @@ async function gerarDoc() {
   const participants = document.getElementById('participants').value || 'Não informado';
   const date = new Date().toLocaleDateString('pt-BR');
 
-  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = docx;
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = window.docx;
 
   const lines = currentAta.split('\n').filter(l => l.trim());
 
