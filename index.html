@@ -192,7 +192,7 @@
     overflow-y: auto;
     display: none;
   }
-  .doc-preview.visible { display: block; }
+  .doc-preview.visible { display: block !important; }
   .doc-preview-placeholder {
     background: var(--surface2);
     border-radius: var(--radius-sm);
@@ -515,6 +515,7 @@ function renderPreview(ataText, name, participants, date) {
 
   box.innerHTML = html;
   box.classList.add('visible');
+  box.style.display = 'block';
   placeholder.style.display = 'none';
 }
 
