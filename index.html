@@ -183,6 +183,19 @@
   }
   .ata-placeholder { color: var(--faint); font-style: italic; }
 
+  .token-info {
+    display: none;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+  .token-info.visible { display: block; }
+  .token-info span { color: var(--text); font-weight: 500; }
+
   .doc-preview {
     background: #fff;
     border-radius: var(--radius-sm);
@@ -339,6 +352,7 @@
         <button class="btn" id="btn-email" onclick="enviarEmail()" disabled>✉️ E-mail</button>
         <button class="btn" id="btn-doc" onclick="compartilharDoc()" disabled>📤 Compartilhar doc</button>
       </div>
+      <div class="token-info" id="token-info"></div>
     </div></div>
   </div>
 
@@ -472,6 +486,17 @@ async function gerarAta() {
     if (data.error) throw new Error(data.error.message);
     currentAta = data.content?.[0]?.text || 'Não foi possível gerar.';
     renderPreview(currentAta, name, participants, date);
+
+    // Token usage
+    if (data.usage) {
+      const inp = data.usage.input_tokens || 0;
+      const out = data.usage.output_tokens || 0;
+      const total = inp + out;
+      const cost = ((inp * 1 + out * 5) / 1_000_000).toFixed(5);
+      const el = document.getElementById('token-info');
+      el.innerHTML = `🔢 Tokens — entrada: <span>${inp}</span> · saída: <span>${out}</span> · total: <span>${total}</span> · custo estimado: <span>~$${cost}</span>`;
+      el.classList.add('visible');
+    }
     document.getElementById('btn-salvar').disabled = false;
     document.getElementById('btn-copiar').disabled = false;
     document.getElementById('btn-email').disabled = false;
