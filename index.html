@@ -311,7 +311,7 @@
         <button class="btn" id="btn-salvar" onclick="salvarAta()" disabled>💾 Salvar</button>
         <button class="btn" id="btn-copiar" onclick="copiarAta()" disabled>📋 Copiar</button>
         <button class="btn" id="btn-email" onclick="enviarEmail()" disabled>✉️ E-mail</button>
-        <button class="btn" id="btn-doc" onclick="gerarDoc()" disabled>📄 Gerar doc</button>
+        <button class="btn" id="btn-doc" onclick="compartilharDoc()" disabled>📤 Compartilhar doc</button>
       </div>
     </div></div>
   </div>
@@ -489,7 +489,7 @@ function enviarEmail() {
   window.location.href = 'mailto:?subject=' + encodeURIComponent('Ata — ' + name) + '&body=' + encodeURIComponent(currentAta);
 }
 
-async function gerarDoc() {
+async function compartilharDoc() {
   if (!currentAta) return;
 
   const name = document.getElementById('meeting-name').value || 'Reunião';
@@ -499,10 +499,8 @@ async function gerarDoc() {
   const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = window.docx;
 
   const lines = currentAta.split('\n').filter(l => l.trim());
-
   const children = [];
 
-  // Título
   children.push(new Paragraph({
     text: name,
     heading: HeadingLevel.HEADING_1,
@@ -510,21 +508,16 @@ async function gerarDoc() {
     spacing: { after: 200 }
   }));
 
-  // Subtítulo
   children.push(new Paragraph({
     children: [new TextRun({ text: `Data: ${date} | Participantes: ${participants}`, color: '666666', size: 22 })],
     alignment: AlignmentType.CENTER,
     spacing: { after: 400 }
   }));
 
-  // Conteúdo
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-
-    // Detecta títulos (linhas que terminam com ":")
     const isHeading = trimmed.endsWith(':') && trimmed.length < 60;
-    // Detecta itens de lista
     const isList = trimmed.startsWith('-') || trimmed.startsWith('•');
 
     if (isHeading) {
@@ -547,15 +540,26 @@ async function gerarDoc() {
     }
   }
 
-  const doc = new Document({
-    sections: [{ children }]
-  });
-
+  const doc = new Document({ sections: [{ children }] });
   const blob = await Packer.toBlob(doc);
+  const fileName = `Ata - ${name} - ${date}.docx`;
+  const file = new File([blob], fileName, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+
+  // Tenta Web Share API (iOS/Android)
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: fileName });
+      return;
+    } catch(err) {
+      if (err.name === 'AbortError') return; // usuário cancelou
+    }
+  }
+
+  // Fallback: baixa o arquivo
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `Ata - ${name} - ${date}.docx`;
+  a.download = fileName;
   a.click();
   URL.revokeObjectURL(url);
 }
