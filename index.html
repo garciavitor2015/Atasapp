@@ -183,6 +183,31 @@
   }
   .ata-placeholder { color: var(--faint); font-style: italic; }
 
+  .doc-preview {
+    background: #fff;
+    border-radius: var(--radius-sm);
+    border: 1px solid #e0e0e0;
+    padding: 20px 16px;
+    max-height: 380px;
+    overflow-y: auto;
+    display: none;
+  }
+  .doc-preview.visible { display: block; }
+  .doc-preview-placeholder {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    min-height: 80px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dp-title { font-size: 16px; font-weight: 500; text-align: center; color: #1a1a1a; margin-bottom: 4px; }
+  .dp-meta { font-size: 11px; text-align: center; color: #888; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 0.5px solid #e0e0e0; }
+  .dp-section { font-size: 11px; font-weight: 500; color: #555; text-transform: uppercase; letter-spacing: 0.06em; margin: 14px 0 6px; }
+  .dp-text { font-size: 13px; line-height: 1.6; color: #333; margin-bottom: 5px; }
+  .dp-item { font-size: 13px; line-height: 1.6; color: #333; padding-left: 14px; position: relative; margin-bottom: 3px; }
+  .dp-item::before { content: '–'; position: absolute; left: 0; color: #aaa; }
+  .dp-hr { border: none; border-top: 0.5px solid #e8e8e8; margin: 12px 0; }
+
   .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
   .btn {
     display: flex; align-items: center; gap: 6px;
@@ -303,9 +328,10 @@
         <div class="spinner"></div>
         <span>Gerando ata com Claude AI...</span>
       </div>
-      <div class="ata-content" id="ata-box">
+      <div class="doc-preview-placeholder" id="ata-placeholder">
         <span class="ata-placeholder">A ata aparecerá aqui após clicar em "Gerar ata".</span>
       </div>
+      <div class="doc-preview" id="ata-box"></div>
       <div class="btn-row">
         <button class="btn btn-accent" onclick="gerarAta()">✨ Gerar ata</button>
         <button class="btn" id="btn-salvar" onclick="salvarAta()" disabled>💾 Salvar</button>
@@ -445,19 +471,51 @@ async function gerarAta() {
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
     currentAta = data.content?.[0]?.text || 'Não foi possível gerar.';
-    document.getElementById('ata-box').textContent = currentAta;
+    renderPreview(currentAta, name, participants, date);
     document.getElementById('btn-salvar').disabled = false;
     document.getElementById('btn-copiar').disabled = false;
     document.getElementById('btn-email').disabled = false;
     document.getElementById('btn-doc').disabled = false;
     setStatus('✅ Ata gerada com sucesso!', 'ok');
   } catch(err) {
-    document.getElementById('ata-box').innerHTML = '<span class="ata-placeholder">Erro: ' + err.message + '</span>';
+    document.getElementById('ata-placeholder').style.display = 'flex';
+    document.getElementById('ata-placeholder').innerHTML = '<span class="ata-placeholder">Erro: ' + err.message + '</span>';
     setStatus('Erro ao conectar com Claude AI.', 'error');
   }
 
   document.getElementById('loading-row').style.display = 'none';
-  document.getElementById('ata-box').style.display = 'block';
+}
+
+function renderPreview(ataText, name, participants, date) {
+  const box = document.getElementById('ata-box');
+  const placeholder = document.getElementById('ata-placeholder');
+  const lines = ataText.split('\n');
+
+  let html = `<div class="dp-title">${name}</div>`;
+  html += `<div class="dp-meta">Data: ${date} &nbsp;·&nbsp; Participantes: ${participants}</div>`;
+
+  for (const line of lines) {
+    const t = line.trim();
+    if (!t) continue;
+    // Linha toda em maiúsculas ou terminando em ":" = seção
+    const isSection = (t === t.toUpperCase() && t.length > 2) || (t.endsWith(':') && t.length < 60 && !t.startsWith('-'));
+    const isList = t.startsWith('-') || t.startsWith('•') || t.startsWith('*');
+    const isHr = t.startsWith('---');
+
+    if (isHr) {
+      html += `<hr class="dp-hr">`;
+    } else if (isSection) {
+      html += `<div class="dp-section">${t.replace(/:$/, '')}</div>`;
+    } else if (isList) {
+      html += `<div class="dp-item">${t.replace(/^[-•*]\s*/, '')}</div>`;
+    } else {
+      html += `<div class="dp-text">${t}</div>`;
+    }
+  }
+
+  box.innerHTML = html;
+  box.classList.add('visible');
+  placeholder.style.display = 'none';
 }
 
 function salvarAta() {
@@ -586,8 +644,8 @@ function abrirAta(i) {
   document.getElementById('meeting-name').value = a.name || '';
   document.getElementById('participants').value = a.participants || '';
   document.getElementById('transcript-box').value = a.transcript || '';
-  document.getElementById('ata-box').textContent = a.ata || '';
   currentAta = a.ata || '';
+  if (currentAta) renderPreview(currentAta, a.name, a.participants || '', a.date || '');
   document.getElementById('btn-copiar').disabled = false;
   document.getElementById('btn-email').disabled = false;
   document.getElementById('btn-doc').disabled = false;
